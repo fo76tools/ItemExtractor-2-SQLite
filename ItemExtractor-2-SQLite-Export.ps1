@@ -116,39 +116,33 @@ $ItemExtractorObject.characterInventories = @{}
 # ForEach of "All Rows"
 $PSObject | ForEach-Object {   
 
-    # If Row Type is known
-    if ( $Types -contains $_.Type ) {
+    # ShortHand
+    $Helper = ( $_.Account + " - " + $_.Character )
 
-        # ShortHand
-        $Helper = ( $_.Account + " - " + $_.Character )
+    # Convert from "Flat JSON"
+    $_.JSON = $_.JSON | ConvertFrom-Json
 
-        # Convert from "Flat JSON"
-        $_.JSON = $_.JSON | ConvertFrom-Json
+    # Create a hashtable for this account - character
+    if (! $ItemExtractorObject.characterInventories.$Helper ) {             
+        $ItemExtractorObject.characterInventories.$Helper = @{}
+    }
 
-        # Create a hashtable for this account - character
-        if (! $ItemExtractorObject.characterInventories.$Helper ) {             
-            $ItemExtractorObject.characterInventories.$Helper = @{}
-        }
+    # if Type is array
+    if ( $ArrayTypes -contains $_.Type ) {
 
-        # if Type is flat
-        if ( $FlatTypes -contains $_.Type ) { 
+        # create an array list
+        if (! $ItemExtractorObject.characterInventories.$Helper.($_.Type) ) { $ItemExtractorObject.characterInventories.$Helper.($_.Type) = [System.Collections.ArrayList]@() }
+
+        # add to array list
+        $ItemExtractorObject.characterInventories.$Helper.($_.Type).Add( $_.JSON ) | Out-Null
+
+    }
+
+    else {
+          
+        # just set the property
+        $ItemExtractorObject.characterInventories.$Helper.($_.Type) = $_.JSON 
             
-            # just set the property
-            $ItemExtractorObject.characterInventories.$Helper.($_.Type) = $_.JSON 
-        
-        }
-
-        # if Type is array
-        elseif ( $ArrayTypes -contains $_.Type ) {
-
-            # create an array list
-            if (! $ItemExtractorObject.characterInventories.$Helper.($_.Type) ) { $ItemExtractorObject.characterInventories.$Helper.($_.Type) = [System.Collections.ArrayList]@() }
-
-            # add to array list
-            $ItemExtractorObject.characterInventories.$Helper.($_.Type).Add( $_.JSON ) | Out-Null
-
-        }
-
     }
 
 }
