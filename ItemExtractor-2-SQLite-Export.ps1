@@ -126,24 +126,9 @@ $PSObject | ForEach-Object {
     if (! $ItemExtractorObject.characterInventories.$Helper ) {             
         $ItemExtractorObject.characterInventories.$Helper = @{}
     }
-
-    # if Type is array
-    if ( $ArrayTypes -contains $_.Type ) {
-
-        # create an array list
-        if (! $ItemExtractorObject.characterInventories.$Helper.($_.Type) ) { $ItemExtractorObject.characterInventories.$Helper.($_.Type) = [System.Collections.ArrayList]@() }
-
-        # add to array list
-        $ItemExtractorObject.characterInventories.$Helper.($_.Type).Add( $_.JSON ) | Out-Null
-
-    }
-
-    else {
-          
-        # just set the property
-        $ItemExtractorObject.characterInventories.$Helper.($_.Type) = $_.JSON 
-            
-    }
+         
+    # set the property
+    $ItemExtractorObject.characterInventories.$Helper.($_.Type) = $_.JSON 
 
 }
 
