@@ -45,10 +45,10 @@ param (
     
 )
 
-# Load common statics and functions
-. .\ItemExtractor-2-SQLite-CommonStatics.ps1
-. .\ItemExtractor-2-SQLite-CommonFunctions.ps1
+$BaseDirectory = $PSScriptRoot
 
+# Load common statics and functions
+. $BaseDirectory\ItemExtractor-2-SQLite-CommonFunctions.ps1
 
 function Add-ItemExtractorItem {
 
@@ -56,14 +56,14 @@ function Add-ItemExtractorItem {
         $TimeStamp,
         $Account,
         $Character,
-        $Type,
-        $JSON
+        $Property,
+        $Value
     )      
 
-    Write-Host (Get-Date) "Importing:" "Data:" $TimeStamp $Account $Character $Type "..." 
+    Write-Host (Get-Date) "Importing:" "Data:" $TimeStamp $Account $Character $Property "..." 
                     
     # Generate an InsertStatement and insert into DB
-    $InsertStatement = 'INSERT INTO itemextractor VALUES (' + "'" + ( $TimeStamp | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Account | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Character | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Type | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $JSON | Get-SQLite-SanitizedValues ) + "'" + ');'
+    $InsertStatement = 'INSERT INTO itemextractor VALUES (' + "'" + ( $TimeStamp | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Account | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Character | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Property | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Value | Get-SQLite-SanitizedValues ) + "'" + ');'
     $InsertStatement | Get-SQLite-Data | Out-Null
 
 }
@@ -97,13 +97,17 @@ function Add-ItemExtractorSourceFile {
             # Account/Character Data WORKAROUND - switched atm - 2020-12-27
             if ( $ItemData.CharacterInfoData -and $ItemData.AccountInfoData ) {
 
-                # get real ones
-                $RealAccountInfoData = $ItemData.CharacterInfoData.PSObject.Copy()
-                $RealCharacterInfoData = $ItemData.AccountInfoData.PSObject.Copy()
+                if ( $ItemData.AccountInfoData.level ) {
+
+                    # get real ones
+                    $RealAccountInfoData = $ItemData.CharacterInfoData.PSObject.Copy()
+                    $RealCharacterInfoData = $ItemData.AccountInfoData.PSObject.Copy()
     
-                # set real ones
-                $ItemData.AccountInfoData = $RealAccountInfoData
-                $ItemData.CharacterInfoData = $RealCharacterInfoData   
+                    # set real ones
+                    $ItemData.AccountInfoData = $RealAccountInfoData
+                    $ItemData.CharacterInfoData = $RealCharacterInfoData   
+
+                }
 
             }
 
@@ -125,27 +129,27 @@ function Add-ItemExtractorSourceFile {
             Write-Host (Get-Date) "Importing:" "Data:" "TimeStamp:" $TimeStamp "Account:" $Account "Character:" $Character "..."
     
             # ItemExtractor "InventoryData"
-            $ItemDataPropertiesNames = ( $ItemData | Get-Member -MemberType NoteProperty ).Name
+            $ItemDataPropertyNames = ( $ItemData | Get-Member -MemberType NoteProperty ).Name
 
-            $ItemDataPropertiesNames | ForEach-Object {
+            $ItemDataPropertyNames | ForEach-Object {
 
                 # FullGameData
                 if ( $_ -like "fullGameData" ) {
 
-                    $fullGameDataPropertiesNames = ( $ItemData.fullGameData | Get-Member -MemberType NoteProperty ).Name
-                    $fullGameDataPropertiesNames | ForEach-Object {
+                    $fullGameDataPropertyNames = ( $ItemData.fullGameData | Get-Member -MemberType NoteProperty ).Name
+                    $fullGameDataPropertyNames | ForEach-Object {
             
-                        if ( $ItemDataPropertiesNames -contains $_ ) {
+                        if ( $ItemDataPropertyNames -contains $_ ) {
                             
-                            Write-Host (Get-Date) "Importing:" "Data:" $TimeStamp $Account $Character $_ "from FullGameData skipped - present in ItemExtractor"
+                            Write-Host (Get-Date) "Importing:" "Data:" $TimeStamp $Account $Character $_ "present in ItemExtractor - skipped"
     
                         }
     
                         else {
 
                             # Add to DB
-                            $JSON = $ItemData.fullGameData.$_ | ConvertTo-Json -Depth 100 -Compress
-                            Add-ItemExtractorItem -TimeStamp $TimeStamp -Account $Account -Character $Character -Type $_ -JSON $JSON
+                            $Value = $ItemData.fullGameData.$_ | ConvertTo-Json -Depth 100 -Compress
+                            Add-ItemExtractorItem -TimeStamp $TimeStamp -Account $Account -Character $Character -Property $_ -Value $Value
 
                         }
             
@@ -155,10 +159,10 @@ function Add-ItemExtractorSourceFile {
                 
                 else {
 
-                    $JSON = $ItemData.$_ | ConvertTo-Json -Depth 100 -Compress
+                    $Value = $ItemData.$_ | ConvertTo-Json -Depth 100 -Compress
 
                     # Add to DB
-                    Add-ItemExtractorItem -TimeStamp $TimeStamp -Account $Account -Character $Character -Type $_ -JSON $JSON                    
+                    Add-ItemExtractorItem -TimeStamp $TimeStamp -Account $Account -Character $Character -Property $_ -Value $Value                    
 
                 }
 
@@ -185,8 +189,8 @@ $CreateStatement = 'CREATE TABLE itemextractor(
     TimeStamp TEXT,
     Account TEXT,
     Character TEXT,
-    Type TEXT,
-    JSON JSON
+    Property TEXT,
+    Value JSON
 );'
 
 # Start
@@ -195,7 +199,7 @@ $CreateStatement = 'CREATE TABLE itemextractor(
 Add-SQLite-Connector
 
 # Get a connection
-$Connection = $DatabaseFile | Get-SQLite-Connection
+$Connection = Get-ItemExtractor-DatabaseFile | Get-SQLite-Connection
 
 # Open the connection
 $Connection.Open()

@@ -88,6 +88,12 @@ function Get-SQLite-TableExists {
 
 }
 
+function Get-ItemExtractor-DatabaseFile {
+    return $PSScriptRoot + "\ItemExtractor.sqlite"
+}
+
+
+
 # General Functions
 function Get-StringHash {
 

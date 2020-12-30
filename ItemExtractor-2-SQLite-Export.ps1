@@ -24,9 +24,10 @@
 [CmdletBinding()]
 param ()   
 
+$BaseDirectory = $PSScriptRoot
+
 # Load common statics and functions
-. .\ItemExtractor-2-SQLite-CommonStatics.ps1
-. .\ItemExtractor-2-SQLite-CommonFunctions.ps1
+. $BaseDirectory\ItemExtractor-2-SQLite-CommonFunctions.ps1
 
 # Start
 
@@ -34,7 +35,7 @@ param ()
 Add-SQLite-Connector
 
 # Get a connection
-$Connection = $DatabaseFile | Get-SQLite-Connection
+$Connection = Get-ItemExtractor-DatabaseFile | Get-SQLite-Connection
 
 # Open the connection
 $Connection.Open()
@@ -43,7 +44,8 @@ $Connection.Open()
 $LatestInventoryTimeStamps = @{}
 
 # Select distinct from DB: only most recent Account, Character, TimeStamp
-$StoredDataStatement = 'SELECT DISTINCT "Account","Character","TimeStamp" FROM itemextractor ORDER BY "Account","Character","TimeStamp" DESC;'
+$StoredDataStatement = 'SELECT DISTINCT "Account","Character","TimeStamp" FROM itemextractor ORDER BY "TimeStamp";'
+
 $StoredData = $StoredDataStatement | Get-SQLite-Data
 
 # ForEach of this "table rows"
@@ -87,7 +89,7 @@ foreach ( $Account in $Accounts ) {
         $TimeStamp = $_.Value
 
         # Select this characters data
-        $InventoryStatement = 'SELECT * FROM itemextractor WHERE TimeStamp="' + ( $TimeStamp | Get-SQLite-SanitizedValues ) + '" AND "Character"="' + ( $Character | Get-SQLite-SanitizedValues ) + '" AND "Account"="' + ( $Account | Get-SQLite-SanitizedValues ) + '";'       
+        $InventoryStatement = 'SELECT * FROM itemextractor WHERE TimeStamp="' + ( $TimeStamp | Get-SQLite-SanitizedValues ) + '" AND "Character"="' + ( $Character | Get-SQLite-SanitizedValues ) + '" AND "Account"="' + ( $Account | Get-SQLite-SanitizedValues ) + '";'
         $InventoryData = $InventoryStatement | Get-SQLite-Data
 
         # add this data to the the output array
@@ -120,7 +122,7 @@ $PSObject | ForEach-Object {
     $Helper = ( $_.Account + " - " + $_.Character )
 
     # Convert from "Flat JSON"
-    $_.JSON = $_.JSON | ConvertFrom-Json
+    $_.Value = $_.Value | ConvertFrom-Json
 
     # Create a hashtable for this account - character
     if (! $ItemExtractorObject.characterInventories.$Helper ) {             
@@ -128,12 +130,12 @@ $PSObject | ForEach-Object {
     }
          
     # set the property
-    $ItemExtractorObject.characterInventories.$Helper.($_.Type) = $_.JSON 
+    $ItemExtractorObject.characterInventories.$Helper.($_.Property) = $_.Value
 
 }
 
 # Output the PSObject as json
-$PSObject | ConvertTo-Json -Depth 100 -Compress | Out-File "current-inventories.json"
+$PSObject | ConvertTo-Json -Depth 100 | Out-File "current-inventories.json"
 
 # Output the ItemExtractorObject as json
 $ItemExtractorObject | ConvertTo-Json -Depth 100 -Compress | Out-File "current-inventories.itemextractor.json"
