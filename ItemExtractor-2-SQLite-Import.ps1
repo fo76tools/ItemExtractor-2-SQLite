@@ -49,6 +49,25 @@ param (
 . .\ItemExtractor-2-SQLite-CommonStatics.ps1
 . .\ItemExtractor-2-SQLite-CommonFunctions.ps1
 
+
+function Add-ItemExtractorItem {
+
+    param (
+        $TimeStamp,
+        $Account,
+        $Character,
+        $Type,
+        $JSON
+    )      
+
+    Write-Host (Get-Date) "Importing:" "Data:" $TimeStamp $Account $Character $Type "..." 
+                    
+    # Generate an InsertStatement and insert into DB
+    $InsertStatement = 'INSERT INTO itemextractor VALUES (' + "'" + ( $TimeStamp | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Account | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Character | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Type | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $JSON | Get-SQLite-SanitizedValues ) + "'" + ');'
+    $InsertStatement | Get-SQLite-Data | Out-Null
+
+}
+
 function Add-ItemExtractorSourceFile {
 
     param (
@@ -76,14 +95,17 @@ function Add-ItemExtractorSourceFile {
             $ItemData = $SourceFileData.characterInventories.$_
 
             # Account/Character Data WORKAROUND - switched atm - 2020-12-27
+            if ( $ItemData.CharacterInfoData -and $ItemData.AccountInfoData ) {
 
-            # get real ones
-            $RealAccountInfoData = $ItemData.CharacterInfoData.PSObject.Copy()
-            $RealCharacterInfoData = $ItemData.AccountInfoData.PSObject.Copy()
+                # get real ones
+                $RealAccountInfoData = $ItemData.CharacterInfoData.PSObject.Copy()
+                $RealCharacterInfoData = $ItemData.AccountInfoData.PSObject.Copy()
+    
+                # set real ones
+                $ItemData.AccountInfoData = $RealAccountInfoData
+                $ItemData.CharacterInfoData = $RealCharacterInfoData   
 
-            # set real ones
-            $ItemData.AccountInfoData = $RealAccountInfoData
-            $ItemData.CharacterInfoData = $RealCharacterInfoData
+            }
 
             # Workaround for priceChecks
             if ( $ItemName -like "priceCheck" ) {
@@ -96,71 +118,52 @@ function Add-ItemExtractorSourceFile {
                 
             }
 
-            # Account Name
+            # Account / Character
             $Account = $ItemData.AccountInfoData.Name
             $Character = $ItemData.CharacterInfoData.Name
 
             Write-Host (Get-Date) "Importing:" "Data:" "TimeStamp:" $TimeStamp "Account:" $Account "Character:" $Character "..."
     
             # ItemExtractor "InventoryData"
-            foreach ( $Type in $Types ) {
+            $ItemDataPropertiesNames = ( $ItemData | Get-Member -MemberType NoteProperty ).Name
 
-                # If Type is no Array
-                if ( $FlatTypes -contains $Type ) {
-    
-                    # We are "flat" here - we want the JSON as text - not as object
-                    $JSON = $ItemData.$Type | ConvertTo-Json -Depth 100 -Compress
-    
-                    # Generate an InsertStatement and insert into DB
-                    $InsertStatement = 'INSERT INTO itemextractor VALUES (' + "'" + ( $TimeStamp | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Account | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Character | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Type | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $JSON | Get-SQLite-SanitizedValues ) + "'" + ');'        
-                    $InsertStatement | Get-SQLite-Data | Out-Null
-    
-                }                
-    
-                # If Type is an array
-                elseif ( $ArrayTypes -contains $Type ) {
-    
-                    # ShortHand to the Array
-                    $ItemArray = $ItemData.$Type
-        
-                    # Loop the Array
-                    foreach ( $Item in $ItemArray ) {
-        
-                        # We are "flat" here - we want the JSON as text - not as object
-                        $JSON = $Item | ConvertTo-Json -Depth 100 -Compress
+            $ItemDataPropertiesNames | ForEach-Object {
+
+                # FullGameData
+                if ( $_ -like "fullGameData" ) {
+
+                    $fullGameDataPropertiesNames = ( $ItemData.fullGameData | Get-Member -MemberType NoteProperty ).Name
+                    $fullGameDataPropertiesNames | ForEach-Object {
+            
+                        if ( $ItemDataPropertiesNames -contains $_ ) {
                             
-                        # Generate an InsertStatement and insert into DB
-                        $InsertStatement = 'INSERT INTO itemextractor VALUES (' + "'" + ( $TimeStamp | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Account | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Character | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Type | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $JSON | Get-SQLite-SanitizedValues ) + "'" + ');'
-                        $InsertStatement | Get-SQLite-Data | Out-Null
-            
-                    }   
+                            Write-Host (Get-Date) "Importing:" "Data:" $TimeStamp $Account $Character $_ "from FullGameData skipped - present in ItemExtractor"
     
-                }
-        
-            }               
-            
-            # FullGameData
-            if ($ItemData.fullGameData) {
+                        }
+    
+                        else {
 
-                $fullGameDataPropertiesNames = ( $ItemData.fullGameData | Get-Member -MemberType NoteProperty ).Name
-                $fullGameDataPropertiesNames | ForEach-Object {
-        
-                    # ShortHands
-                    $name = $_
-                    $value = $ItemData.fullGameData.$_
-        
-                    # We are "flat" here - we want the JSON as text - not as object
-                    $Type = $name
-                    $JSON = $value | ConvertTo-Json -Depth 100 -Compress
-        
-                    # Generate an InsertStatement and insert into DB
-                    $InsertStatement = 'INSERT INTO itemextractor VALUES (' + "'" + ( $TimeStamp | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Account | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Character | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Type | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $JSON | Get-SQLite-SanitizedValues ) + "'" + ');'
-                    $InsertStatement | Get-SQLite-Data | Out-Null                        
-        
-                }    
-    
-            }
-    
+                            # Add to DB
+                            $JSON = $ItemData.fullGameData.$_ | ConvertTo-Json -Depth 100 -Compress
+                            Add-ItemExtractorItem -TimeStamp $TimeStamp -Account $Account -Character $Character -Type $_ -JSON $JSON
+
+                        }
+            
+                    }                        
+                    
+                }
+                
+                else {
+
+                    $JSON = $ItemData.$_ | ConvertTo-Json -Depth 100 -Compress
+
+                    # Add to DB
+                    Add-ItemExtractorItem -TimeStamp $TimeStamp -Account $Account -Character $Character -Type $_ -JSON $JSON                    
+
+                }
+
+            }                       
+            
             Write-Host (Get-Date) "Importing:" "Data:" "TimeStamp:" $TimeStamp "Account:" $Account "Character:" $Character "done"
     
         }      

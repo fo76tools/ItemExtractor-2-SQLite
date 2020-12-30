@@ -4,8 +4,3 @@
 
 $BaseDirectory = $PSScriptRoot
 $DatabaseFile = $PSScriptRoot + "\ItemExtractor.sqlite"
-
-$Types = @("playerInventory","stashInventory","AccountInfoData","CharacterInfoData")
-
-$ArrayTypes = @("playerInventory","stashInventory")
-$FlatTypes = @("AccountInfoData","CharacterInfoData")
