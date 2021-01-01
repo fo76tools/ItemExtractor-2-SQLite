@@ -66,7 +66,7 @@ $StoredData.Tables[0] | ForEach-Object {
 # Return the used TimeStamps as JSON
 Write-Host "Account\Character:TimeStamps"
 $TimeStampsUsed = $LatestInventoryTimeStamps | ConvertTo-Json 
-$TimeStampsUsed | Out-File "current-inventories.timestamps.json"
+$TimeStampsUsed | Out-File "current.timestamps.json"
 $TimeStampsUsed
 
 # Set an array to hold the output
@@ -104,7 +104,7 @@ $Connection.Close()
 
 # Flatten it out and export CSV
 $CSV = $Output | ConvertTo-Csv -NoTypeInformation
-$CSV | Out-File "current-inventories.csv"
+$CSV | Out-File "current.csv"
 
 # Take the CSV data and make it a PS Object
 $PSObject = $CSV | ConvertFrom-Csv
@@ -135,7 +135,7 @@ $PSObject | ForEach-Object {
 }
 
 # Output the PSObject as json
-$PSObject | ConvertTo-Json -Depth 100 | Out-File "current-inventories.json"
+$PSObject | ConvertTo-Json -Depth 100 | Out-File "current.json"
 
 # Output the ItemExtractorObject as json
-$ItemExtractorObject | ConvertTo-Json -Depth 100 -Compress | Out-File "current-inventories.itemextractor.json"
+$ItemExtractorObject | ConvertTo-Json -Depth 100 -Compress | Out-File "current.itemextractor.json"
