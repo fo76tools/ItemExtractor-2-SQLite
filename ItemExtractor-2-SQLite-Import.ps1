@@ -60,7 +60,7 @@ function Add-ItemExtractorItem {
         $Value
     )      
 
-    Write-Host (Get-Date) "Importing:" "Data:" $TimeStamp $Account $Character $Property "..." 
+    Write-Host (Get-Date).ToUniversalTime().ToString("u") "Importing:" "Data:" $TimeStamp $Account $Character $Property "..." 
                     
     # Generate an InsertStatement and insert into DB
     $InsertStatement = 'INSERT INTO itemextractor VALUES (' + "'" + ( $TimeStamp | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Account | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Character | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Property | Get-SQLite-SanitizedValues ) + "'," + "'" + ( $Value | Get-SQLite-SanitizedValues ) + "'" + ');'
@@ -78,7 +78,7 @@ function Add-ItemExtractorSourceFile {
     # If we can get SourceFile Object
     if ( $SourceFile = Get-Item -Path $SourceFile -ErrorAction SilentlyContinue ) {
 
-        Write-Host (Get-Date) "Importing:" "Source file:" $SourceFile.FullName "..."
+        Write-Host (Get-Date).ToUniversalTime().ToString("u") "Importing:" "Source file:" $SourceFile.FullName "..."
 
         # Get TimeStamp
         $TimeStamp = ($SourceFile.LastAccessTime | Get-Date).ToUniversalTime().ToString("u")
@@ -126,7 +126,7 @@ function Add-ItemExtractorSourceFile {
             $Account = $ItemData.AccountInfoData.Name
             $Character = $ItemData.CharacterInfoData.Name
 
-            Write-Host (Get-Date) "Importing:" "Data:" "TimeStamp:" $TimeStamp "Account:" $Account "Character:" $Character "..."
+            Write-Host (Get-Date).ToUniversalTime().ToString("u") "Importing:" "Data:" "TimeStamp:" $TimeStamp "Account:" $Account "Character:" $Character "..."
     
             # ItemExtractor "InventoryData"
             $ItemDataPropertyNames = ( $ItemData | Get-Member -MemberType NoteProperty ).Name
@@ -141,7 +141,7 @@ function Add-ItemExtractorSourceFile {
             
                         if ( $ItemDataPropertyNames -contains $_ ) {
                             
-                            Write-Host (Get-Date) "Importing:" "Data:" $TimeStamp $Account $Character $_ "present in ItemExtractor - skipped"
+                            Write-Host (Get-Date).ToUniversalTime().ToString("u") "Importing:" "Data:" $TimeStamp $Account $Character $_ "present in ItemExtractor - skipped"
     
                         }
     
@@ -168,18 +168,18 @@ function Add-ItemExtractorSourceFile {
 
             }                       
             
-            Write-Host (Get-Date) "Importing:" "Data:" "TimeStamp:" $TimeStamp "Account:" $Account "Character:" $Character "done"
+            Write-Host (Get-Date).ToUniversalTime().ToString("u") "Importing:" "Data:" "TimeStamp:" $TimeStamp "Account:" $Account "Character:" $Character "done"
     
         }      
 
     }
        
-    Write-Host (Get-Date) "Importing:" "Source file:" $SourceFile.FullName "done"
+    Write-Host (Get-Date).ToUniversalTime().ToString("u") "Importing:" "Source file:" $SourceFile.FullName "done"
 
     # Remove the file afterwards
-    Write-Host (Get-Date) "Removing:" $SourceFile.FullName "..."
+    Write-Host (Get-Date).ToUniversalTime().ToString("u") "Removing:" $SourceFile.FullName "..."
     $SourceFile | Remove-Item
-    Write-Host (Get-Date) "Removing:" $SourceFile.FullName "done"  
+    Write-Host (Get-Date).ToUniversalTime().ToString("u") "Removing:" $SourceFile.FullName "done"  
 
 }
 

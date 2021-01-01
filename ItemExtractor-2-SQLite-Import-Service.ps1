@@ -52,6 +52,10 @@ $BaseDirectory = $PSScriptRoot
 # the FileFilter used for monitoring
 $FileFilter ='itemsmod.ini'
 
+# start log to file
+$LogPath = Join-Path $BaseDirectory -ChildPath "ItemExtractor-2-SQLite-Import-Service.log"
+Start-Transcript -Path $LogPath -Append -NoClobber
+
 # define the action for the filechange
 [scriptblock]$ChangedAction={
     
@@ -68,22 +72,22 @@ $FileFilter ='itemsmod.ini'
         $TemporaryFile = $SourceFile.FullName + "." + $TimeStamp + ".json"
     
         # rename the file
-        Write-Host (Get-Date) "Rename-Item: source file to temporary file:" $SourceFile.FullName "->" $TemporaryFile
+        Write-Host (Get-Date).ToUniversalTime().ToString("u") "Rename-Item: source file to temporary file:" $SourceFile.FullName "->" $TemporaryFile
         Rename-Item -Path $SourceFile -NewName $TemporaryFile -Force
      
         # send the file to DB
-        Write-Host (Get-Date) "Start-Process: Sending temporary file to DB"
+        Write-Host (Get-Date).ToUniversalTime().ToString("u") "Start-Process: Sending temporary file to DB"
 
         # generate an argument list for Start-Process
         $ArgumentList = @( "-F", ('"'+$BaseDirectory+'\ItemExtractor-2-SQLite-Import.ps1"'), ('"'+$TemporaryFile+'"') )
 
         # start a separated process to import the file
-        Start-Process powershell.exe -NoNewWindow -ArgumentList $ArgumentList | Out-Host  
+        Start-Process powershell.exe -NoNewWindow -ArgumentList $ArgumentList | Out-Default
 
     }
 
 }
 
 # start the filesystem watcher inside this environment (needs to know $BaseDirectory)
-Write-Host (Get-Date) "Starting FileSystemWatcher ..."
+Write-Host (Get-Date).ToUniversalTime().ToString("u") "Starting FileSystemWatcher ..."
 & "$BaseDirectory\Start-FileSystemWatcher.ps1" $Fallout76DataDirectory $FileFilter -ChangedAction $ChangedAction
