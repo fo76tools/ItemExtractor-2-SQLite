@@ -81,7 +81,7 @@ function Add-ItemExtractorSourceFile {
         Write-Host (Get-Date) "Importing:" "Source file:" $SourceFile.FullName "..."
 
         # Get TimeStamp
-        $TimeStamp = $SourceFile.LastAccessTime | Get-Date -format 'yyyy-MM-dd-HH-mm-ss'
+        $TimeStamp = ($SourceFile.LastAccessTime | Get-Date).ToUniversalTime().ToString("u")
 
         # Get SourceFile data as object
         $SourceFileData = $SourceFile | Get-Content -Raw | ConvertFrom-Json
