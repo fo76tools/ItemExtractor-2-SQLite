@@ -62,7 +62,7 @@ $FileFilter ='itemsmod.ini'
         $SourceFile = Get-Item -Path $e.FullPath
     
         # get the timestamp
-        $TimeStamp = $SourceFile.LastAccessTime | Get-Date -format 'yyyy-MM-dd-HH-mm-ss'
+        $TimeStamp = ($SourceFile.LastAccessTime | Get-Date).ToUniversalTime().ToString("u") -replace (" ","-") -replace (":","-")
 
         # set TemporaryFile
         $TemporaryFile = $SourceFile.FullName + "." + $TimeStamp + ".json"
